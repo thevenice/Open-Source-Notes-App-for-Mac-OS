@@ -1,5 +1,6 @@
 use iced::widget::{button, column, container, row, scrollable, text, text_input};
 use iced::{Application, Color, Command, Element, Length, Settings, Theme};
+use iced::theme::Button as ButtonTheme;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs;
@@ -21,40 +22,6 @@ impl NoteColor {
             NoteColor::Blue => Color::from_rgb(0.8, 0.8, 1.0),
             NoteColor::Yellow => Color::from_rgb(1.0, 1.0, 0.8),
             NoteColor::Orange => Color::from_rgb(1.0, 0.9, 0.8),
-        }
-    }
-}
-
-struct NoteButtonStyle {
-    color: Color,
-}
-
-impl iced::widget::button::StyleSheet for NoteButtonStyle {
-    type Style = Theme; // This should match the `Button`'s expected style type
-
-    fn active(&self, _: &Self::Style) -> iced::widget::button::Appearance {
-        iced::widget::button::Appearance {
-            background: Some(iced::Background::Color(self.color)),
-            border_radius: 5.0,
-            ..Default::default()
-        }
-    }
-
-    fn hovered(&self, _: &Self::Style) -> iced::widget::button::Appearance {
-        let lighten = |value: f32| -> f32 {
-            (value + 0.1).min(1.0)
-        };
-
-        let new_color = Color::from_rgb(
-            lighten(self.color.r),
-            lighten(self.color.g),
-            lighten(self.color.b),
-        );
-
-        iced::widget::button::Appearance {
-            background: Some(iced::Background::Color(new_color)),
-            border_radius: 5.0,
-            ..Default::default()
         }
     }
 }
@@ -169,9 +136,7 @@ impl Application for NotesApp {
                 column.push(
                     button(text(&note.title).size(16))
                         .on_press(Message::SelectNote(note.id.clone()))
-                        .style(NoteButtonStyle {
-                            color: note.color.to_color(),
-                        })
+                        .style(ButtonTheme::Custom(Box::new(NoteButtonStyle(note.color))))
                         .padding(10),
                 )
             },
@@ -222,7 +187,7 @@ impl Application for NotesApp {
 
         if let Some(error) = &self.error {
             layout = layout.push(
-                container(text(error).style(iced::theme::Text::Color(Color::from_rgb(0.8, 0.0, 0.0))))
+                container(text(error).style(Color::from_rgb(0.8, 0.0, 0.0)))
                     .padding(10),
             );
         }
@@ -232,6 +197,20 @@ impl Application for NotesApp {
             .height(Length::Fill)
             .center_x()
             .into()
+    }
+}
+
+struct NoteButtonStyle(NoteColor);
+
+impl button::StyleSheet for NoteButtonStyle {
+    type Style = Theme;
+
+    fn active(&self, _style: &Self::Style) -> button::Appearance {
+        button::Appearance {
+            background: Some(iced::Background::Color(self.0.to_color())),
+            border_radius: 5.0,
+            ..Default::default()
+        }
     }
 }
 
@@ -248,7 +227,6 @@ impl NotesApp {
         Ok(())
     }
 }
-
 
 fn main() -> iced::Result {
     NotesApp::run(Settings::default())
